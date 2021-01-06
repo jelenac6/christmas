@@ -13,6 +13,91 @@
 
 
 #include <iostream>
+unsigned int initEBOBuffers(){
+    float vertices[] = {
+            -0.5f, -0.5f, -0.5f, // levo dole nazad
+            0.5f, -0.5f, -0.5f, //desno dole nazad
+            -0.5f, 0.5f, -0.5f, // levo gore nazad
+            0.5f, 0.5f, -0.5f, // desno gore nazad
+            -0.5f, -0.5f, 0.5f, // levo dole napred
+            0.5f, -0.5f, 0.5f, // desno dole napred
+            -0.5f, 0.5f, 0.5f, // levo gore napred
+            0.5f, 0.5f, 0.5f //desno gore napred
+    };
+
+    unsigned int indices[] = {
+            0, 1, 2, //iza
+            1, 2, 3,
+
+            4, 5, 6,//ispred
+            5, 6, 7,
+
+            0, 4, 2,//levo
+            4, 2, 6,
+
+            1, 5, 3,//desno
+            5, 3, 7,
+
+            2, 3, 6, //gore
+            3, 6, 7,
+
+            0, 1, 4,//dole
+            1, 4, 5
+    };
+
+    unsigned int VBO, VAO, EBO;
+    glGenVertexArrays(1, &VAO);
+    glGenBuffers(1, &VBO);
+    glGenBuffers(1, &EBO);
+    // bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
+    glBindVertexArray(VAO);
+
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+
+
+
+    // note that this is allowed, the call to glVertexAttribPointer registered VBO as the vertex attribute's bound vertex buffer object so afterwards we can safely unbind
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    // remember: do NOT unbind the EBO while a VAO is active as the bound element buffer object IS stored in the VAO; keep the EBO bound.
+    //glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+    // You can unbind the VAO afterwards so other VAO calls won't accidentally modify this VAO, but this rarely happens. Modifying other
+    // VAOs requires a call to glBindVertexArray anyways so we generally don't unbind VAOs (nor VBOs) when it's not directly necessary.
+    glBindVertexArray(0);
+
+    return VAO;
+}
+const unsigned int SCR_WIDTH = 800;
+const unsigned int SCR_HEIGHT = 600;
+void renderLightCube(unsigned int VAO, Shader shader,Camera camera, glm::vec3 pointLightPosition){
+
+    shader.use();
+
+    glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+    shader.setMat4("projection", projection);
+
+    glm::mat4 view = camera.GetViewMatrix();
+    shader.setMat4("view", view);
+
+    glm::mat4 model = glm::mat4(1.f);
+    model = glm::mat4(1.f);
+    model = glm::translate(model, pointLightPosition);
+    model = glm::scale(model, glm::vec3(0.1f));
+
+    shader.setMat4("model", model);
+    glBindVertexArray(VAO);
+
+    glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
+
+}
 
 unsigned int loadCubemap(vector<std::string> faces);
 
@@ -23,8 +108,7 @@ void processInput(GLFWwindow *window);
 unsigned int loadTexture(const char *path);
 
 // settings
-const unsigned int SCR_WIDTH = 800;
-const unsigned int SCR_HEIGHT = 600;
+
 
 // camera
 Camera camera(glm::vec3(2.0f, 0.0f, 5.0f));
@@ -271,6 +355,7 @@ int main()
 
     // render loop
     // -----------
+    unsigned int VAO2 = initEBOBuffers();
     while (!glfwWindowShouldClose(window))
     {
         // per-frame time logic
@@ -386,6 +471,12 @@ int main()
         lightCubeShader.setMat4("view", view);
 
         // we now draw as many light bulbs as we have point lights.
+
+
+            renderLightCube(VAO2, lightCubeShader, camera, glm::vec3(0.8f,0.2f,4.0f));
+
+
+
         glBindVertexArray(lightCubeVAO);
         for (unsigned int i = 0; i < 4; i++)
         {
