@@ -171,7 +171,7 @@ int main()
     Shader lightCubeShader("resources/shaders/6.light_cube.vs", "resources/shaders/6.light_cube.fs");
     Shader ourShader("resources/shaders/1.model_loading.vs", "resources/shaders/1.model_loading.fs");
     Model ourModel(FileSystem::getPath("resources/objects/santa/Santa.obj"));
-
+    Model ourModel1(FileSystem::getPath("resources/objects/ball/ball.obj"));
     Shader skyboxShader("resources/shaders/6.1.skybox.vs", "resources/shaders/6.1.skybox.fs");
 
 
@@ -332,14 +332,8 @@ int main()
 
 
     // second, configure the light's VAO (VBO stays the same; the vertices are the same for the light object which is also a 3D cube)
-    unsigned int lightCubeVAO;
-    glGenVertexArrays(1, &lightCubeVAO);
-    glBindVertexArray(lightCubeVAO);
 
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    // note that we update the lamp's position attribute's stride to reflect the updated buffer data
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
+
 
     // load textures (we now use a utility function to keep the code more organized)
     // -----------------------------------------------------------------------------
@@ -466,9 +460,7 @@ int main()
         }
 
         // also draw the lamp object(s)
-        lightCubeShader.use();
-        lightCubeShader.setMat4("projection", projection);
-        lightCubeShader.setMat4("view", view);
+
 
         // we now draw as many light bulbs as we have point lights.
 
@@ -477,19 +469,28 @@ int main()
 
 
 
-        glBindVertexArray(lightCubeVAO);
+        lightCubeShader.use();
+        lightCubeShader.setMat4("projection",projection);
+        lightCubeShader.setMat4("view",view);
         for (unsigned int i = 0; i < 4; i++)
         {
             model = glm::mat4(1.0f);
             model = glm::translate(model, pointLightPositions[i]);
+
             model = glm::scale(model, glm::vec3(0.2f)); // Make it a smaller cube
             lightCubeShader.setMat4("model", model);
-            glDrawArrays(GL_TRIANGLES, 0, 36);
+            glm::mat4 model1 = glm::mat4(1.0f);
+            model1 = glm::translate(model1, pointLightPositions[i]);
+
+            model1= glm::scale(model1, glm::vec3(0.01f,0.01f,0.01f)); // Make it a smaller cube
+            lightCubeShader.setMat4("model1", model1);
+           ourModel1.Draw(lightCubeShader);
         }
 
         ourShader.use();
         ourShader.setMat4("projection", projection);
         ourShader.setMat4("view", view);
+
 
         model = glm::translate(model, glm::vec3(20.0f, -12.0f, 3.0f)); // translate it down so it's at the center of the scene
         model=glm::rotate(model,glm::radians(-90.0f),glm::vec3(1.0f,0.0f,0.0f));
@@ -522,8 +523,7 @@ int main()
 
     // optional: de-allocate all resources once they've outlived their purpose:
     // ------------------------------------------------------------------------
-    glDeleteVertexArrays(1, &cubeVAO);
-    glDeleteVertexArrays(1, &lightCubeVAO);
+;
     glDeleteBuffers(1, &VBO);
 
     // glfw: terminate, clearing all previously allocated GLFW resources.
