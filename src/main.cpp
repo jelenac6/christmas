@@ -111,7 +111,7 @@ unsigned int loadTexture(const char *path);
 
 
 // camera
-Camera camera(glm::vec3(2.0f, 0.0f, 5.0f));
+Camera camera(glm::vec3(2.0f, 0.0f, 6.0f));
 float lastX = SCR_WIDTH / 2.0f;
 float lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
@@ -173,6 +173,7 @@ int main()
     Model ourModel(FileSystem::getPath("resources/objects/santa/Santa.obj"));
     Model ourModel1(FileSystem::getPath("resources/objects/ball/ball.obj"));
     Shader skyboxShader("resources/shaders/6.1.skybox.vs", "resources/shaders/6.1.skybox.fs");
+    Shader snowShader("resources/shaders/3.1.blending.vs", "resources/shaders/3.1.blending.fs");
 
 
     // set up vertex data (and buffer(s)) and configure vertex attributes
@@ -223,12 +224,6 @@ int main()
     };
     // positions all containers
     glm::vec3 cubePositions[] = {
-           /* glm::vec3( 0.0f,  0.0f,  0.0f),
-            glm::vec3(-1.5f, -1.2f, -2.5f),
-            glm::vec3(-3.8f, -2.0f, -12.3f),
-            glm::vec3(-1.7f,  1.5f, -7.5f),
-            glm::vec3( 1.3f, -2.0f, -2.5f),
-            glm::vec3(-1.3f,  1.0f, -1.5f)*/
             glm::vec3( 0.0f,  0.0f,  0.0f),
             glm::vec3( 2.0f,  5.0f, -15.0f),
             glm::vec3(-1.5f, -2.2f, -2.5f),
@@ -242,7 +237,7 @@ int main()
     };
     // positions of the point lights
     glm::vec3 pointLightPositions[] = {
-            glm::vec3( 0.7f,  0.2f,  5.0f),
+            glm::vec3( -7.0f,  0.2f,  5.0f),
             glm::vec3( 2.3f, -3.3f, -4.0f),
             glm::vec3(-4.0f,  2.0f, -12.0f),
             glm::vec3( 0.0f,  0.0f, -3.0f)
@@ -292,6 +287,18 @@ int main()
             -1.0f, -1.0f,  1.0f,
             1.0f, -1.0f,  1.0f
     };
+
+    float transparentVertices[] = {
+            // positions         // texture Coords (swapped y coordinates because texture is flipped upside down)
+            0.0f,  0.5f,  0.0f,  0.0f,  0.0f,
+            0.0f, -0.5f,  0.0f,  0.0f,  1.0f,
+            1.0f, -0.5f,  0.0f,  1.0f,  1.0f,
+
+            0.0f,  0.5f,  0.0f,  0.0f,  0.0f,
+            1.0f, -0.5f,  0.0f,  1.0f,  1.0f,
+            1.0f,  0.5f,  0.0f,  1.0f,  0.0f
+    };
+
     // first, configure the cube's VAO (and VBO)
     unsigned int VBO, cubeVAO;
     glGenVertexArrays(1, &cubeVAO);
@@ -317,6 +324,37 @@ int main()
     glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), &skyboxVertices, GL_STATIC_DRAW);
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+
+    unsigned int transparentVAO, transparentVBO;
+    glGenVertexArrays(1, &transparentVAO);
+    glGenBuffers(1, &transparentVBO);
+    glBindVertexArray(transparentVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, transparentVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(transparentVertices), transparentVertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    glBindVertexArray(0);
+
+
+    unsigned int transparentTexture = loadTexture(FileSystem::getPath("resources/textures/snowflake1.png").c_str());
+
+    vector<glm::vec3> snowflakePosition
+            {
+                    glm::vec3(-1.0f, 2.0f, -0.48f),
+                    glm::vec3( 2.5f, 1.5f, 0.51f),
+                    glm::vec3( 0.6f, 2.0f, 0.7f),
+                    glm::vec3(1.3f, 3.0f, -2.3f),
+                    glm::vec3 (4.5f, 1.5f, -0.6f),
+                    glm::vec3(-2.0f, 3.0f, -0.48f),
+                    glm::vec3( 2.5f, 3.0f, 0.51f),
+                    glm::vec3( 0.6f, 1.0f, 0.7f),
+                    glm::vec3(1.3f, 4.0f, -2.3f),
+                    glm::vec3 (4.5f, 4.0f, -0.6f)
+            };
+
+
 
 
     vector<std::string> faces
@@ -350,6 +388,9 @@ int main()
     // render loop
     // -----------
     unsigned int VAO2 = initEBOBuffers();
+    snowShader.use();
+    snowShader.setInt("texture1", 0);
+
     while (!glfwWindowShouldClose(window))
     {
         // per-frame time logic
@@ -366,6 +407,7 @@ int main()
         // ------
         glClearColor(0.0f, 0.0f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
 
         // be sure to activate shader when setting uniforms/drawing objects
         lightingShader.use();
@@ -453,7 +495,8 @@ int main()
             model = glm::translate(model, cubePositions[i]);
             float angle = 20.0f * i;
             model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
-            model = glm::scale(model,glm::vec3(0.8f,0.8f,0.8f));
+            float scaleAmount=sin(glfwGetTime());
+            model = glm::scale(model,glm::vec3(scaleAmount,scaleAmount,scaleAmount));
             lightingShader.setMat4("model", model);
 
             glDrawArrays(GL_TRIANGLES, 0, 36);
@@ -499,6 +542,23 @@ int main()
 
         ourShader.setMat4("model", model);
         ourModel.Draw(ourShader);
+
+        snowShader.use();
+        snowShader.setMat4("projection", projection);
+        snowShader.setMat4("view", view);
+
+        glBindVertexArray(transparentVAO);
+        glBindTexture(GL_TEXTURE_2D, transparentTexture);
+        for (unsigned int i = 0; i < snowflakePosition.size(); i++)
+        {
+            model = glm::mat4(1.0f);
+            model = glm::translate(model, snowflakePosition[i]);
+            float angle=10*sin(glfwGetTime())*3;
+            model=glm::rotate(model,glm::radians(angle),glm::vec3(1.0f,0.3f,0.5f));
+            model=glm::scale(model,glm::vec3(0.5f,0.5f,0.5f));
+            snowShader.setMat4("model", model);
+            glDrawArrays(GL_TRIANGLES, 0, 6);
+        }
 
         glDepthFunc(GL_LEQUAL);  // change depth function so depth test passes when values are equal to depth buffer's content
         skyboxShader.use();
