@@ -1,4 +1,4 @@
-/home/marija/Desktop/clion-2020.2.4/bin/cmake/linux/bin/cmake -DCMAKE_BUILD_TYPE=Debug -G "CodeBlocks - Unix Makefiles" /home/marija/christmas
+/home/jelena/Desktop/Matf202021/RacunarskaGrafika/clion-2020.2.4/bin/cmake/linux/bin/cmake -DCMAKE_BUILD_TYPE=Debug -G "CodeBlocks - Unix Makefiles" /home/jelena/christmas
 -- The C compiler identification is GNU 9.3.0
 -- The CXX compiler identification is GNU 9.3.0
 -- Check for working C compiler: /usr/bin/cc
@@ -16,4 +16,4 @@
 -- Found OpenGL: /usr/lib/x86_64-linux-gnu/libOpenGL.so   
 -- Configuring done
 -- Generating done
--- Build files have been written to: /home/marija/christmas/cmake-build-debug
+-- Build files have been written to: /home/jelena/christmas/cmake-build-debug

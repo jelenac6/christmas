@@ -6,5 +6,5 @@ CXX_FLAGS = -Wall -Wextra -Wno-unused-variable -Wno-unused-parameter -O3 -g   -s
 
 CXX_DEFINES = -DIMGUI_IMPL_OPENGL_LOADER_GLAD
 
-CXX_INCLUDES = -I/home/marija/christmas/cmake-build-debug/configuration -I/home/marija/christmas/include -I/home/marija/christmas/libs/glad/include -I/home/marija/christmas/libs/imgui/include 
+CXX_INCLUDES = -I/home/jelena/christmas/cmake-build-debug/configuration -I/home/jelena/christmas/include -I/home/jelena/christmas/libs/glad/include -I/home/jelena/christmas/libs/imgui/include 
 

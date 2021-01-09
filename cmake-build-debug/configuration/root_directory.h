@@ -1,1 +1,1 @@
-const char * logl_root = "/home/marija/christmas";
+const char * logl_root = "/home/jelena/christmas";

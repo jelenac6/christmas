@@ -10,104 +10,21 @@
 #include <learnopengl/shader_m.h>
 #include <learnopengl/camera.h>
 #include <learnopengl/model.h>
-
-
 #include <iostream>
-unsigned int initEBOBuffers(){
-    float vertices[] = {
-            -0.5f, -0.5f, -0.5f, // levo dole nazad
-            0.5f, -0.5f, -0.5f, //desno dole nazad
-            -0.5f, 0.5f, -0.5f, // levo gore nazad
-            0.5f, 0.5f, -0.5f, // desno gore nazad
-            -0.5f, -0.5f, 0.5f, // levo dole napred
-            0.5f, -0.5f, 0.5f, // desno dole napred
-            -0.5f, 0.5f, 0.5f, // levo gore napred
-            0.5f, 0.5f, 0.5f //desno gore napred
-    };
-
-    unsigned int indices[] = {
-            0, 1, 2, //iza
-            1, 2, 3,
-
-            4, 5, 6,//ispred
-            5, 6, 7,
-
-            0, 4, 2,//levo
-            4, 2, 6,
-
-            1, 5, 3,//desno
-            5, 3, 7,
-
-            2, 3, 6, //gore
-            3, 6, 7,
-
-            0, 1, 4,//dole
-            1, 4, 5
-    };
-
-    unsigned int VBO, VAO, EBO;
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
-    glGenBuffers(1, &EBO);
-    // bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
-    glBindVertexArray(VAO);
-
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
 
 
-
-    // note that this is allowed, the call to glVertexAttribPointer registered VBO as the vertex attribute's bound vertex buffer object so afterwards we can safely unbind
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-    // remember: do NOT unbind the EBO while a VAO is active as the bound element buffer object IS stored in the VAO; keep the EBO bound.
-    //glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-    // You can unbind the VAO afterwards so other VAO calls won't accidentally modify this VAO, but this rarely happens. Modifying other
-    // VAOs requires a call to glBindVertexArray anyways so we generally don't unbind VAOs (nor VBOs) when it's not directly necessary.
-    glBindVertexArray(0);
-
-    return VAO;
-}
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
-void renderLightCube(unsigned int VAO, Shader shader,Camera camera, glm::vec3 pointLightPosition){
 
-    shader.use();
-
-    glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
-    shader.setMat4("projection", projection);
-
-    glm::mat4 view = camera.GetViewMatrix();
-    shader.setMat4("view", view);
-
-    glm::mat4 model = glm::mat4(1.f);
-    model = glm::mat4(1.f);
-    model = glm::translate(model, pointLightPosition);
-    model = glm::scale(model, glm::vec3(0.1f));
-
-    shader.setMat4("model", model);
-    glBindVertexArray(VAO);
-
-    glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
-
-}
-
-unsigned int loadCubemap(vector<std::string> faces);
-
+// declaration functions
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
+void renderLightCube(unsigned int VAO, Shader shader,Camera camera, glm::vec3 pointLightPosition);
+unsigned int initEBOBuffers();
 void processInput(GLFWwindow *window);
 unsigned int loadTexture(const char *path);
-
-// settings
+unsigned int loadCubemap(vector<std::string> faces);
 
 
 // camera
@@ -167,16 +84,17 @@ int main()
 
     // build and compile our shader zprogram
     // ------------------------------------
-    Shader lightingShader("resources/shaders/6.multiple_lights.vs", "resources/shaders/6.multiple_lights.fs");
-    Shader lightCubeShader("resources/shaders/6.light_cube.vs", "resources/shaders/6.light_cube.fs");
-    Shader ourShader("resources/shaders/1.model_loading.vs", "resources/shaders/1.model_loading.fs");
+    Shader lightingShader("resources/shaders/lightShaderM.vs", "resources/shaders/lightShaderM.fs");
+    Shader lightCubeShader("resources/shaders/lightCube.vs", "resources/shaders/lightCube.fs");
+    Shader ourShader("resources/shaders/modelShader.vs", "resources/shaders/modelShader.fs");
+    Shader skyboxShader("resources/shaders/skyboxShader.vs", "resources/shaders/skyboxShader.fs");
+    Shader snowShader("resources/shaders/snowflakeShader.vs", "resources/shaders/snowflakeShader.fs");
+
+    // models loading
     Model ourModel(FileSystem::getPath("resources/objects/santa/Santa.obj"));
     Model ourModel1(FileSystem::getPath("resources/objects/ball/ball.obj"));
-    Shader skyboxShader("resources/shaders/6.1.skybox.vs", "resources/shaders/6.1.skybox.fs");
-    Shader snowShader("resources/shaders/3.1.blending.vs", "resources/shaders/3.1.blending.fs");
 
-
-    // set up vertex data (and buffer(s)) and configure vertex attributes
+    // set up vertex data (and buffer(s)) and configure vertex attributes  --gifts
     // ------------------------------------------------------------------
     float vertices[] = {
             // positions          // normals           // texture coords
@@ -222,7 +140,7 @@ int main()
             -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  0.0f,
             -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f
     };
-    // positions all containers
+    // positions of gifts
     glm::vec3 cubePositions[] = {
             glm::vec3( 0.0f,  0.0f,  0.0f),
             glm::vec3( 2.0f,  5.0f, -15.0f),
@@ -287,7 +205,7 @@ int main()
             -1.0f, -1.0f,  1.0f,
             1.0f, -1.0f,  1.0f
     };
-
+    // snowflake rectangle
     float transparentVertices[] = {
             // positions         // texture Coords (swapped y coordinates because texture is flipped upside down)
             0.0f,  0.5f,  0.0f,  0.0f,  0.0f,
@@ -299,7 +217,22 @@ int main()
             1.0f,  0.5f,  0.0f,  1.0f,  0.0f
     };
 
-    // first, configure the cube's VAO (and VBO)
+    vector<glm::vec3> snowflakePosition
+            {
+                    glm::vec3(-1.0f, 2.0f, -0.48f),
+                    glm::vec3( 2.5f, 1.5f, 0.51f),
+                    glm::vec3( 0.6f, 2.0f, 0.7f),
+                    glm::vec3(1.3f, 3.0f, -2.3f),
+                    glm::vec3 (4.5f, 1.5f, -0.6f),
+                    glm::vec3(-2.0f, 3.0f, -0.48f),
+                    glm::vec3( 2.5f, 3.0f, 0.51f),
+                    glm::vec3( 0.6f, 1.0f, 0.7f),
+                    glm::vec3(1.3f, 4.0f, -2.3f),
+                    glm::vec3 (4.5f, 4.0f, -0.6f)
+            };
+
+
+    // cube's VAO (and VBO)
     unsigned int VBO, cubeVAO;
     glGenVertexArrays(1, &cubeVAO);
     glGenBuffers(1, &VBO);
@@ -325,6 +258,7 @@ int main()
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 
+    //snowflake VAO
     unsigned int transparentVAO, transparentVBO;
     glGenVertexArrays(1, &transparentVAO);
     glGenBuffers(1, &transparentVBO);
@@ -337,26 +271,7 @@ int main()
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
     glBindVertexArray(0);
 
-
-    unsigned int transparentTexture = loadTexture(FileSystem::getPath("resources/textures/snowflake1.png").c_str());
-
-    vector<glm::vec3> snowflakePosition
-            {
-                    glm::vec3(-1.0f, 2.0f, -0.48f),
-                    glm::vec3( 2.5f, 1.5f, 0.51f),
-                    glm::vec3( 0.6f, 2.0f, 0.7f),
-                    glm::vec3(1.3f, 3.0f, -2.3f),
-                    glm::vec3 (4.5f, 1.5f, -0.6f),
-                    glm::vec3(-2.0f, 3.0f, -0.48f),
-                    glm::vec3( 2.5f, 3.0f, 0.51f),
-                    glm::vec3( 0.6f, 1.0f, 0.7f),
-                    glm::vec3(1.3f, 4.0f, -2.3f),
-                    glm::vec3 (4.5f, 4.0f, -0.6f)
-            };
-
-
-
-
+    //skybox faces
     vector<std::string> faces
             {
                     FileSystem::getPath("resources/textures/skybox/right.jpg"),
@@ -368,26 +283,24 @@ int main()
             };
     unsigned int cubemapTexture = loadCubemap(faces);
 
-
-    // second, configure the light's VAO (VBO stays the same; the vertices are the same for the light object which is also a 3D cube)
-
-
-
     // load textures (we now use a utility function to keep the code more organized)
     // -----------------------------------------------------------------------------
     unsigned int diffuseMap = loadTexture(FileSystem::getPath("resources/textures/ribbon.jpg").c_str());
     unsigned int specularMap = loadTexture(FileSystem::getPath("resources/textures/container2_specular.png").c_str());
+    unsigned int transparentTexture = loadTexture(FileSystem::getPath("resources/textures/snowflake1.png").c_str());
 
-    // shader configuration
+    // lightningShader configuration
     // --------------------
     lightingShader.use();
     lightingShader.setInt("material.diffuse", 0);
     lightingShader.setInt("material.specular", 1);
 
-
     // render loop
     // -----------
     unsigned int VAO2 = initEBOBuffers();
+
+    // snowShader configuration
+    // --------------------
     snowShader.use();
     snowShader.setInt("texture1", 0);
 
@@ -486,7 +399,7 @@ int main()
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, specularMap);
 
-        // render containers
+        // render gifts
         glBindVertexArray(cubeVAO);
         for (unsigned int i = 0; i < 10; i++)
         {
@@ -502,16 +415,10 @@ int main()
             glDrawArrays(GL_TRIANGLES, 0, 36);
         }
 
-        // also draw the lamp object(s)
+        // using ebo to draw a cube- source of light
+        renderLightCube(VAO2, lightCubeShader, camera, glm::vec3(0.8f,0.2f,4.0f));
 
-
-        // we now draw as many light bulbs as we have point lights.
-
-
-            renderLightCube(VAO2, lightCubeShader, camera, glm::vec3(0.8f,0.2f,4.0f));
-
-
-
+        // pointlights TODO model matrix
         lightCubeShader.use();
         lightCubeShader.setMat4("projection",projection);
         lightCubeShader.setMat4("view",view);
@@ -527,13 +434,14 @@ int main()
 
             model1= glm::scale(model1, glm::vec3(0.01f,0.01f,0.01f)); // Make it a smaller cube
             lightCubeShader.setMat4("model1", model1);
-           ourModel1.Draw(lightCubeShader);
+            ourModel1.Draw(lightCubeShader);
         }
 
+
+        // santa claus
         ourShader.use();
         ourShader.setMat4("projection", projection);
         ourShader.setMat4("view", view);
-
 
         model = glm::translate(model, glm::vec3(20.0f, -12.0f, 3.0f)); // translate it down so it's at the center of the scene
         model=glm::rotate(model,glm::radians(-90.0f),glm::vec3(1.0f,0.0f,0.0f));
@@ -543,6 +451,7 @@ int main()
         ourShader.setMat4("model", model);
         ourModel.Draw(ourShader);
 
+        // using blanding for snowflakes- discard techinque
         snowShader.use();
         snowShader.setMat4("projection", projection);
         snowShader.setMat4("view", view);
@@ -560,6 +469,8 @@ int main()
             glDrawArrays(GL_TRIANGLES, 0, 6);
         }
 
+
+        // skybox
         glDepthFunc(GL_LEQUAL);  // change depth function so depth test passes when values are equal to depth buffer's content
         skyboxShader.use();
         view = glm::mat4(glm::mat3(camera.GetViewMatrix())); // remove translation from the view matrix
@@ -573,8 +484,6 @@ int main()
         glBindVertexArray(0);
         glDepthFunc(GL_LESS); // set depth function back to default
 
-
-
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
         glfwSwapBuffers(window);
@@ -583,14 +492,21 @@ int main()
 
     // optional: de-allocate all resources once they've outlived their purpose:
     // ------------------------------------------------------------------------
-;
+    glDeleteBuffers(1,&VAO2);
+    glDeleteBuffers(1,&skyboxVAO);
+    glDeleteBuffers(1,&transparentVAO);
     glDeleteBuffers(1, &VBO);
+    glDeleteBuffers(1,&skyboxVBO);
+    glDeleteBuffers(1,&transparentVBO);
 
     // glfw: terminate, clearing all previously allocated GLFW resources.
     // ------------------------------------------------------------------
     glfwTerminate();
     return 0;
 }
+
+//------------------------------------------------------------------------------------------------------------------
+// definition of functions
 
 // process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
 // ---------------------------------------------------------------------------------------------------------
@@ -645,6 +561,83 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
     camera.ProcessMouseScroll(yoffset);
 }
 
+unsigned int initEBOBuffers(){
+    float vertices[] = {
+            -0.5f, -0.5f, -0.5f, // levo dole nazad
+            0.5f, -0.5f, -0.5f, //desno dole nazad
+            -0.5f, 0.5f, -0.5f, // levo gore nazad
+            0.5f, 0.5f, -0.5f, // desno gore nazad
+            -0.5f, -0.5f, 0.5f, // levo dole napred
+            0.5f, -0.5f, 0.5f, // desno dole napred
+            -0.5f, 0.5f, 0.5f, // levo gore napred
+            0.5f, 0.5f, 0.5f //desno gore napred
+    };
+
+    unsigned int indices[] = {
+            0, 1, 2, //iza
+            1, 2, 3,
+
+            4, 5, 6,//ispred
+            5, 6, 7,
+
+            0, 4, 2,//levo
+            4, 2, 6,
+
+            1, 5, 3,//desno
+            5, 3, 7,
+
+            2, 3, 6, //gore
+            3, 6, 7,
+
+            0, 1, 4,//dole
+            1, 4, 5
+    };
+
+    unsigned int VBO, VAO, EBO;
+    glGenVertexArrays(1, &VAO);
+    glGenBuffers(1, &VBO);
+    glGenBuffers(1, &EBO);
+    // bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
+    glBindVertexArray(VAO);
+
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+
+    // note that this is allowed, the call to glVertexAttribPointer registered VBO as the vertex attribute's bound vertex buffer object so afterwards we can safely unbind
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    glBindVertexArray(0);
+
+    return VAO;
+}
+
+void renderLightCube(unsigned int VAO, Shader shader,Camera camera, glm::vec3 pointLightPosition){
+
+    shader.use();
+
+    glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+    shader.setMat4("projection", projection);
+
+    glm::mat4 view = camera.GetViewMatrix();
+    shader.setMat4("view", view);
+
+    glm::mat4 model = glm::mat4(1.f);
+    model = glm::mat4(1.f);
+    model = glm::translate(model, pointLightPosition);
+    model = glm::scale(model, glm::vec3(0.1f));
+
+    shader.setMat4("model", model);
+    glBindVertexArray(VAO);
+
+    glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
+
+}
 // utility function for loading a 2D texture from file
 // ---------------------------------------------------
 unsigned int loadTexture(char const * path)
