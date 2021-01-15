@@ -62,8 +62,8 @@ int main()
         glfwTerminate();
         return -1;
     }
-    glfwMakeContextCurrent(window);
-    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+    glfwMakeContextCurrent(window); // hocemo da crtamo u ovom prozoru
+    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback); // kad se velicina promeni(viewPort)
     glfwSetCursorPosCallback(window, mouse_callback);
     glfwSetScrollCallback(window, scroll_callback);
 
@@ -72,7 +72,7 @@ int main()
 
     // glad: load all OpenGL function pointers
     // ---------------------------------------
-    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
+    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) // ucitavamo sve glad funkcije
     {
         std::cout << "Failed to initialize GLAD" << std::endl;
         return -1;
@@ -91,8 +91,8 @@ int main()
     Shader snowShader("resources/shaders/snowflakeShader.vs", "resources/shaders/snowflakeShader.fs");
 
     // models loading
-    Model ourModel(FileSystem::getPath("resources/objects/santa/Santa.obj"));
-    Model ourModel1(FileSystem::getPath("resources/objects/ball/ball.obj"));
+    Model ourModel("resources/objects/santa/Santa.obj");
+    Model ourModel1("resources/objects/ball/ball.obj");
 
     // set up vertex data (and buffer(s)) and configure vertex attributes  --gifts
     // ------------------------------------------------------------------
@@ -274,20 +274,20 @@ int main()
     //skybox faces
     vector<std::string> faces
             {
-                    FileSystem::getPath("resources/textures/skybox/right.jpg"),
-                    FileSystem::getPath("resources/textures/skybox/left.jpg"),
-                    FileSystem::getPath("resources/textures/skybox/top.jpg"),
-                    FileSystem::getPath("resources/textures/skybox/bottom.jpg"),
-                    FileSystem::getPath("resources/textures/skybox/front.jpg"),
-                    FileSystem::getPath("resources/textures/skybox/back.jpg")
+                    "resources/textures/skybox/right.jpg",
+                    "resources/textures/skybox/left.jpg",
+                    "resources/textures/skybox/top.jpg",
+                    "resources/textures/skybox/bottom.jpg",
+                    "resources/textures/skybox/front.jpg",
+                    "resources/textures/skybox/back.jpg"
             };
     unsigned int cubemapTexture = loadCubemap(faces);
 
     // load textures (we now use a utility function to keep the code more organized)
     // -----------------------------------------------------------------------------
-    unsigned int diffuseMap = loadTexture(FileSystem::getPath("resources/textures/ribbon.jpg").c_str());
-    unsigned int specularMap = loadTexture(FileSystem::getPath("resources/textures/container2_specular.png").c_str());
-    unsigned int transparentTexture = loadTexture(FileSystem::getPath("resources/textures/snowflake1.png").c_str());
+    unsigned int diffuseMap = loadTexture("resources/textures/ribbon.jpg");
+    unsigned int specularMap = loadTexture("resources/textures/glitter.png");
+    unsigned int transparentTexture = loadTexture("resources/textures/snowflake1.png");
 
     // lightningShader configuration
     // --------------------
@@ -322,17 +322,10 @@ int main()
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 
-        // be sure to activate shader when setting uniforms/drawing objects
         lightingShader.use();
         lightingShader.setVec3("viewPos", camera.Position);
         lightingShader.setFloat("material.shininess", 32.0f);
 
-        /*
-           Here we set all the uniforms for the 5/6 types of lights we have. We have to set them manually and index
-           the proper PointLight struct in the array to set each uniform variable. This can be done more code-friendly
-           by defining light types as classes and set their values in there, or by using a more efficient uniform approach
-           by using 'Uniform buffer objects', but that is something we'll discuss in the 'Advanced GLSL' tutorial.
-        */
         // directional light
         lightingShader.setVec3("dirLight.direction", -0.2f, -1.0f, -0.3f);
         lightingShader.setVec3("dirLight.ambient", 0.05f, 0.05f, 0.05f);
@@ -486,7 +479,7 @@ int main()
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
-        glfwSwapBuffers(window);
+        glfwSwapBuffers(window); //2 bafera, trenutni salje na crtanje nakon cega ga prazni
         glfwPollEvents();
     }
 
@@ -525,17 +518,11 @@ void processInput(GLFWwindow *window)
         camera.ProcessKeyboard(RIGHT, deltaTime);
 }
 
-// glfw: whenever the window size changed (by OS or user resize) this callback function executes
-// ---------------------------------------------------------------------------------------------
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
-    // make sure the viewport matches the new window dimensions; note that width and
-    // height will be significantly larger than specified on retina displays.
-    glViewport(0, 0, width, height);
+    glViewport(0, 0, width, height); // menja prostor u kom renderujemo
 }
 
-// glfw: whenever the mouse moves, this callback is called
-// -------------------------------------------------------
 void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 {
     if (firstMouse)
@@ -554,8 +541,6 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
     camera.ProcessMouseMovement(xoffset, yoffset);
 }
 
-// glfw: whenever the mouse scroll wheel scrolls, this callback is called
-// ----------------------------------------------------------------------
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
     camera.ProcessMouseScroll(yoffset);
@@ -597,7 +582,7 @@ unsigned int initEBOBuffers(){
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
     glGenBuffers(1, &EBO);
-    // bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
+
     glBindVertexArray(VAO);
 
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
